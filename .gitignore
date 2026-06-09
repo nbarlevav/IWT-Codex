@@ -1,0 +1,25 @@
+# Local scratch and generated deliverables
+work/
+outputs/
+IWTApp/work-*.apk
+
+# React Native / Android generated artifacts
+IWTApp/node_modules/
+IWTApp/android/.gradle/
+IWTApp/android/**/build/
+IWTApp/android/**/.cxx/
+IWTApp/android/local.properties
+IWTApp/android/app/src/main/assets/index.android.bundle
+IWTApp/android/app/src/main/res/drawable-*/src_assets_*.png
+IWTApp/android/app/src/main/res/drawable-*/node_modules_*.png
+
+# Logs and transient files
+*.log
+*.tmp
+*.hprof
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
