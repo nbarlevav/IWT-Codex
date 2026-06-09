@@ -60,6 +60,8 @@ const IwtSession = NativeModules.IwtSession as
       pause: () => Promise<void>;
       resume: () => Promise<void>;
       stop: () => Promise<void>;
+      isDisclaimerAccepted: () => Promise<boolean>;
+      acceptDisclaimer: () => Promise<void>;
     }
   | undefined;
 
@@ -76,6 +78,7 @@ function App() {
   const [session, setSession] = useState<Session>(freshSession);
   const [nowMs, setNowMs] = useState(Date.now());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const sequence = useMemo(() => {
@@ -100,6 +103,12 @@ function App() {
     settings,
     totalSeconds,
   );
+
+  useEffect(() => {
+    IwtSession?.isDisclaimerAccepted?.()
+      .then(accepted => setDisclaimerOpen(!accepted))
+      .catch(() => setDisclaimerOpen(false));
+  }, []);
 
   useEffect(() => {
     if (session.status !== 'running') {
@@ -194,6 +203,11 @@ function App() {
     await IwtSession?.stop?.();
     setSession(freshSession());
     setNowMs(Date.now());
+  }
+
+  async function acceptDisclaimer() {
+    await IwtSession?.acceptDisclaimer?.();
+    setDisclaimerOpen(false);
   }
 
   function openSettings() {
@@ -326,6 +340,42 @@ function App() {
           </Pressable>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={disclaimerOpen}
+        onRequestClose={() => {}}>
+        <View style={styles.disclaimerBackdrop}>
+          <View style={styles.disclaimerCard}>
+            <Text style={styles.disclaimerTitle}>Before You Walk</Text>
+            <Text style={styles.disclaimerText}>
+              IWT is a timer and cueing tool for interval walking. It is not
+              medical advice, diagnosis, treatment, coaching, emergency support,
+              or a guarantee of safety or results.
+            </Text>
+            <Text style={styles.disclaimerText}>
+              You are responsible for deciding whether this activity is safe for
+              you, your route, your health, your device, and your surroundings.
+              Consult a qualified professional before exercising if you have any
+              health concerns. Stop immediately if you feel pain, dizziness,
+              shortness of breath, or anything unusual.
+            </Text>
+            <Text style={styles.disclaimerText}>
+              Use this app at your own risk. The app owner and contributors
+              provide it as-is, without warranties, and are not responsible for
+              injuries, accidents, device issues, data loss, missed cues, or
+              other damages from using the app.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={acceptDisclaimer}
+              style={[styles.primaryButton, styles.disclaimerButton]}>
+              <Text style={styles.primaryButtonText}>I UNDERSTAND AND ACCEPT</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         animationType="slide"
@@ -824,6 +874,37 @@ const styles = StyleSheet.create({
   sheetActions: {
     flexDirection: 'row',
     gap: 10,
+  },
+  disclaimerBackdrop: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.78)',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  disclaimerCard: {
+    backgroundColor: colors.midnight,
+    borderColor: colors.line,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 14,
+    maxWidth: 480,
+    padding: 18,
+    width: '100%',
+  },
+  disclaimerTitle: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  disclaimerText: {
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  disclaimerButton: {
+    backgroundColor: colors.fast,
+    marginTop: 6,
   },
 });
 

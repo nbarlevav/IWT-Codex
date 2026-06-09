@@ -1,6 +1,7 @@
 package com.iwtapp
 
 import android.content.Intent
+import android.content.Context
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -11,6 +12,17 @@ class IwtSessionModule(private val reactContext: ReactApplicationContext) :
   ReactContextBaseJavaModule(reactContext) {
 
   override fun getName(): String = "IwtSession"
+
+  @ReactMethod
+  fun isDisclaimerAccepted(promise: Promise) {
+    promise.resolve(preferences().getBoolean(KEY_DISCLAIMER_ACCEPTED, false))
+  }
+
+  @ReactMethod
+  fun acceptDisclaimer(promise: Promise) {
+    preferences().edit().putBoolean(KEY_DISCLAIMER_ACCEPTED, true).apply()
+    promise.resolve(null)
+  }
 
   @ReactMethod
   fun start(config: ReadableMap, promise: Promise) {
@@ -49,5 +61,12 @@ class IwtSessionModule(private val reactContext: ReactApplicationContext) :
     reactContext.startService(Intent(reactContext, IwtSessionService::class.java).apply {
       action = actionName
     })
+  }
+
+  private fun preferences() =
+    reactContext.getSharedPreferences("iwt_preferences", Context.MODE_PRIVATE)
+
+  companion object {
+    private const val KEY_DISCLAIMER_ACCEPTED = "disclaimerAccepted"
   }
 }

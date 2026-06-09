@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -280,10 +281,13 @@ class IwtSessionService : Service(), TextToSpeech.OnInitListener {
     )
     val modeLabel = if (snapshot.mode == "fast") "Fast pace" else "Slow pace"
     val state = if (paused) "Paused" else "${formatMs(snapshot.segmentRemainingMs)} left"
+    val notificationColor = if (snapshot.mode == "fast") Color.rgb(255, 122, 47) else Color.rgb(82, 230, 167)
     return NotificationCompat.Builder(this, CHANNEL_ID)
       .setSmallIcon(R.drawable.ic_iwt_notification)
       .setContentTitle("IWT - $modeLabel")
       .setContentText("Cycle ${snapshot.cycle} of $cycles - $state")
+      .setColor(notificationColor)
+      .setColorized(true)
       .setOngoing(running)
       .setOnlyAlertOnce(true)
       .setContentIntent(openIntent)
