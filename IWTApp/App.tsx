@@ -12,7 +12,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
   Vibration,
   View,
 } from 'react-native';
@@ -46,6 +45,8 @@ const defaultSettings: Settings = {
 };
 
 const walkingBackdrop = require('./src/assets/iwt-walking-backdrop.png');
+const minuteOptions = [1, 2, 3, 4, 5, 6, 8, 10];
+const cycleOptions = [3, 4, 5, 6, 7, 8, 10];
 
 const IwtSession = NativeModules.IwtSession as
   | {
@@ -386,33 +387,41 @@ function App() {
           <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>Settings</Text>
             <View style={styles.formGrid}>
-              <NumberField
+              <OptionSelector
                 label="Fast minutes"
-                value={String(Math.round(draft.fastSeconds / 60))}
+                value={Math.round(draft.fastSeconds / 60)}
+                options={minuteOptions}
+                suffix="min"
+                accent={colors.fast}
                 onChange={value =>
                   setDraft(current => ({
                     ...current,
-                    fastSeconds: clamp(parseInt(value, 10), 1, 30) * 60,
+                    fastSeconds: value * 60,
                   }))
                 }
               />
-              <NumberField
+              <OptionSelector
                 label="Slow minutes"
-                value={String(Math.round(draft.slowSeconds / 60))}
+                value={Math.round(draft.slowSeconds / 60)}
+                options={minuteOptions}
+                suffix="min"
+                accent={colors.slow}
                 onChange={value =>
                   setDraft(current => ({
                     ...current,
-                    slowSeconds: clamp(parseInt(value, 10), 1, 30) * 60,
+                    slowSeconds: value * 60,
                   }))
                 }
               />
-              <NumberField
+              <OptionSelector
                 label="Cycles"
-                value={String(draft.cycles)}
+                value={draft.cycles}
+                options={cycleOptions}
+                accent={colors.ink}
                 onChange={value =>
                   setDraft(current => ({
                     ...current,
-                    cycles: clamp(parseInt(value, 10), 1, 20),
+                    cycles: value,
                   }))
                 }
               />
@@ -530,24 +539,51 @@ function safeVibrate(pattern: number | number[]) {
   }
 }
 
-function NumberField({
+function OptionSelector({
   label,
   value,
+  options,
+  suffix,
+  accent,
   onChange,
 }: {
   label: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: number;
+  options: number[];
+  suffix?: string;
+  accent: string;
+  onChange: (value: number) => void;
 }) {
   return (
-    <View style={styles.field}>
+    <View style={styles.selectorField}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        keyboardType="number-pad"
-        onChangeText={onChange}
-        style={styles.input}
-        value={value}
-      />
+      <View style={styles.optionGrid}>
+        {options.map(option => {
+          const selected = option === value;
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={option}
+              onPress={() => onChange(option)}
+              style={({pressed}) => [
+                styles.optionButton,
+                selected && {
+                  backgroundColor: accent,
+                  borderColor: accent,
+                },
+                pressed && styles.pressed,
+              ]}>
+              <Text
+                style={[
+                  styles.optionText,
+                  selected && styles.optionTextActive,
+                ]}>
+                {suffix ? `${option} ${suffix}` : option}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -818,20 +854,39 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: 7,
   },
+  selectorField: {
+    flexBasis: '100%',
+    gap: 8,
+  },
   fieldLabel: {
     color: colors.muted,
     fontSize: 13,
     fontWeight: '600',
   },
-  input: {
+  optionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionButton: {
+    alignItems: 'center',
     backgroundColor: colors.panel,
     borderColor: colors.line,
     borderRadius: 8,
     borderWidth: 1,
-    color: colors.ink,
-    fontSize: 18,
-    minHeight: 48,
+    justifyContent: 'center',
+    minHeight: 42,
+    minWidth: 68,
     paddingHorizontal: 12,
+  },
+  optionText: {
+    color: colors.ink,
+    fontSize: 14,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '800',
+  },
+  optionTextActive: {
+    color: '#071016',
   },
   segmented: {
     backgroundColor: colors.panel,
