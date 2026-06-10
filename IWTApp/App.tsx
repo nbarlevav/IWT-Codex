@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ImageBackground,
+  Linking,
   Modal,
   NativeModules,
   PermissionsAndroid,
@@ -35,6 +36,13 @@ type Session = {
   lastSegment: number;
 };
 
+type UpdateGate = {
+  checking: boolean;
+  required: boolean;
+  message: string;
+  storeUrl: string;
+};
+
 const defaultSettings: Settings = {
   fastSeconds: 180,
   slowSeconds: 180,
@@ -47,6 +55,13 @@ const defaultSettings: Settings = {
 const walkingBackdrop = require('./src/assets/iwt-walking-backdrop.png');
 const minuteOptions = [1, 2, 3, 4, 5, 6, 8, 10];
 const cycleOptions = [3, 4, 5, 6, 7, 8, 10];
+const currentVersionCode = 1;
+const defaultStoreUrl = 'market://details?id=com.iwtapp';
+const fallbackStoreUrl =
+  'https://play.google.com/store/apps/details?id=com.iwtapp';
+const supabaseConfigUrl =
+  'https://mvbecoqnmmexdnfvvbaw.supabase.co/rest/v1/app_config?select=key,value';
+const supabasePublishableKey = 'sb_publishable_ZiAPY1R10M7KO2SGrJxWKw_Rcu95TcX';
 
 const IwtSession = NativeModules.IwtSession as
   | {
@@ -80,6 +95,12 @@ function App() {
   const [nowMs, setNowMs] = useState(Date.now());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [disclaimerOpen, setDisclaimerOpen] = useState(false);
+  const [updateGate, setUpdateGate] = useState<UpdateGate>({
+    checking: true,
+    required: false,
+    message: 'A new version of IWT is required.',
+    storeUrl: defaultStoreUrl,
+  });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const sequence = useMemo(() => {
@@ -109,6 +130,24 @@ function App() {
     IwtSession?.isDisclaimerAccepted?.()
       .then(accepted => setDisclaimerOpen(!accepted))
       .catch(() => setDisclaimerOpen(false));
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetchUpdateGate()
+      .then(nextGate => {
+        if (active) {
+          setUpdateGate(nextGate);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setUpdateGate(current => ({...current, checking: false}));
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -227,6 +266,23 @@ function App() {
     setSession(freshSession());
     setSettingsOpen(false);
     setNowMs(Date.now());
+  }
+
+  async function openStore() {
+    try {
+      await Linking.openURL(updateGate.storeUrl);
+    } catch {
+      await Linking.openURL(fallbackStoreUrl);
+    }
+  }
+
+  if (updateGate.required) {
+    return (
+      <UpdateRequiredScreen
+        message={updateGate.message}
+        onUpdatePress={openStore}
+      />
+    );
   }
 
   return (
@@ -484,6 +540,98 @@ function App() {
           </View>
         </View>
       </Modal>
+      </SafeAreaView>
+    </ImageBackground>
+  );
+}
+
+async function fetchUpdateGate(): Promise<UpdateGate> {
+  const response = await fetch(supabaseConfigUrl, {
+    headers: {
+      apikey: supabasePublishableKey,
+      Authorization: `Bearer ${supabasePublishableKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Supabase config failed: ${response.status}`);
+  }
+
+  const rows = (await response.json()) as Array<{key: string; value: unknown}>;
+  const config = Object.fromEntries(rows.map(row => [row.key, row.value]));
+  const minVersion = parseConfigNumber(config.android_min_version_code, 1);
+  const latestVersion = parseConfigNumber(config.android_latest_version_code, 1);
+  const forceUpdate = parseConfigBoolean(config.android_force_update, false);
+  const message = parseConfigString(
+    config.android_update_message,
+    'A new version of IWT is required.',
+  );
+  const storeUrl = parseConfigString(config.android_store_url, defaultStoreUrl);
+
+  return {
+    checking: false,
+    required:
+      currentVersionCode < minVersion ||
+      (forceUpdate && currentVersionCode < latestVersion),
+    message,
+    storeUrl,
+  };
+}
+
+function parseConfigNumber(value: unknown, fallback: number) {
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+function parseConfigBoolean(value: unknown, fallback: boolean) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  return fallback;
+}
+
+function parseConfigString(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.trim().length > 0
+    ? value
+    : fallback;
+}
+
+function UpdateRequiredScreen({
+  message,
+  onUpdatePress,
+}: {
+  message: string;
+  onUpdatePress: () => void;
+}) {
+  return (
+    <ImageBackground
+      source={walkingBackdrop}
+      resizeMode="cover"
+      style={styles.screen}>
+      <View style={styles.backdropShade} />
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor={colors.midnight} />
+        <View style={styles.updateGateWrap}>
+          <View style={styles.disclaimerCard}>
+            <Text style={styles.disclaimerTitle}>Update Required</Text>
+            <Text style={styles.disclaimerText}>{message}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onUpdatePress}
+              style={[styles.primaryButton, styles.disclaimerButton]}>
+              <Text style={styles.primaryButtonText}>UPDATE NOW</Text>
+            </Pressable>
+          </View>
+        </View>
       </SafeAreaView>
     </ImageBackground>
   );
@@ -929,6 +1077,12 @@ const styles = StyleSheet.create({
   sheetActions: {
     flexDirection: 'row',
     gap: 10,
+  },
+  updateGateWrap: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
   },
   disclaimerBackdrop: {
     alignItems: 'center',
