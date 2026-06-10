@@ -9,6 +9,9 @@ IWTApp/android/.gradle/
 IWTApp/android/**/build/
 IWTApp/android/**/.cxx/
 IWTApp/android/local.properties
+IWTApp/android/keystore.properties
+*.jks
+*.keystore
 IWTApp/android/app/src/main/assets/index.android.bundle
 IWTApp/android/app/src/main/res/drawable-*/src_assets_*.png
 IWTApp/android/app/src/main/res/drawable-*/node_modules_*.png

@@ -2,6 +2,13 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+def uploadKeystorePropertiesFile = rootProject.file("keystore.properties")
+def uploadKeystoreProperties = new Properties()
+def hasUploadKeystore = uploadKeystorePropertiesFile.exists()
+if (hasUploadKeystore) {
+    uploadKeystoreProperties.load(new FileInputStream(uploadKeystorePropertiesFile))
+}
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -92,18 +99,30 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (hasUploadKeystore) {
+                storeFile file(uploadKeystoreProperties['storeFile'])
+                storePassword uploadKeystoreProperties['storePassword']
+                keyAlias uploadKeystoreProperties['keyAlias']
+                keyPassword uploadKeystoreProperties['keyPassword']
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig hasUploadKeystore ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    if (!hasUploadKeystore && taskGraph.allTasks.any { it.name.toLowerCase().contains("release") }) {
+        throw new GradleException("Release signing requires IWTApp/android/keystore.properties. See IWTApp/android/keystore.properties.example.")
     }
 }
 
