@@ -60,8 +60,8 @@ const defaultStoreUrl = 'market://details?id=com.iwtapp';
 const fallbackStoreUrl =
   'https://play.google.com/store/apps/details?id=com.iwtapp';
 const supabaseConfigUrl =
-  'https://mvbecoqnmmexdnfvvbaw.supabase.co/rest/v1/app_config?select=key,value';
-const supabasePublishableKey = 'sb_publishable_ZiAPY1R10M7KO2SGrJxWKw_Rcu95TcX';
+  'https://bfaqctdcrigemzqeehpb.supabase.co/rest/v1/app_config?select=key,value';
+const supabasePublishableKey = 'sb_publishable_tjW3oJ3qtQ6Wi8HwhfapWg_yNHCLqJb';
 
 const IwtSession = NativeModules.IwtSession as
   | {
