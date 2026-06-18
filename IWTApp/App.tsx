@@ -60,7 +60,7 @@ const defaultStoreUrl = 'market://details?id=com.iwtapp';
 const fallbackStoreUrl =
   'https://play.google.com/store/apps/details?id=com.iwtapp';
 const remoteVersionConfigUrl =
-  'https://iwt.barlevav.com/config/version.json';
+  'https://iwt.barlevav.com/version.json';
 
 const IwtSession = NativeModules.IwtSession as
   | {
