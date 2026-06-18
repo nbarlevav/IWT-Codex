@@ -59,9 +59,8 @@ const currentVersionCode = 1;
 const defaultStoreUrl = 'market://details?id=com.iwtapp';
 const fallbackStoreUrl =
   'https://play.google.com/store/apps/details?id=com.iwtapp';
-const supabaseConfigUrl =
-  'https://bfaqctdcrigemzqeehpb.supabase.co/rest/v1/app_config?select=key,value';
-const supabasePublishableKey = 'sb_publishable_tjW3oJ3qtQ6Wi8HwhfapWg_yNHCLqJb';
+const remoteVersionConfigUrl =
+  'https://iwt.barlevav.com/config/version.json';
 
 const IwtSession = NativeModules.IwtSession as
   | {
@@ -546,19 +545,13 @@ function App() {
 }
 
 async function fetchUpdateGate(): Promise<UpdateGate> {
-  const response = await fetch(supabaseConfigUrl, {
-    headers: {
-      apikey: supabasePublishableKey,
-      Authorization: `Bearer ${supabasePublishableKey}`,
-    },
-  });
+  const response = await fetch(`${remoteVersionConfigUrl}?t=${Date.now()}`);
 
   if (!response.ok) {
-    throw new Error(`Supabase config failed: ${response.status}`);
+    throw new Error(`Version config failed: ${response.status}`);
   }
 
-  const rows = (await response.json()) as Array<{key: string; value: unknown}>;
-  const config = Object.fromEntries(rows.map(row => [row.key, row.value]));
+  const config = (await response.json()) as Record<string, unknown>;
   const minVersion = parseConfigNumber(config.android_min_version_code, 1);
   const latestVersion = parseConfigNumber(config.android_latest_version_code, 1);
   const forceUpdate = parseConfigBoolean(config.android_force_update, false);
