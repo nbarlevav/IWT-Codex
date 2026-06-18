@@ -55,7 +55,7 @@ const defaultSettings: Settings = {
 const walkingBackdrop = require('./src/assets/iwt-walking-backdrop.png');
 const minuteOptions = [1, 2, 3, 4, 5, 6, 8, 10];
 const cycleOptions = [3, 4, 5, 6, 7, 8, 10];
-const currentVersionCode = 1;
+const currentVersionCode = 2;
 const defaultStoreUrl = 'market://details?id=com.iwtapp';
 const fallbackStoreUrl =
   'https://play.google.com/store/apps/details?id=com.iwtapp';
